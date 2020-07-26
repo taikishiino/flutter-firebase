@@ -23,7 +23,8 @@ class AuthService {
     try {
       AuthResult result =  await _auth.signInAnonymously();
       FirebaseUser user = result.user;
-      return _userFromFirebaseUser(user);
+      return user;
+      //return _userFromFirebaseUser(user);
     } catch(e) {
       print(e.toString());
       return null;
@@ -56,7 +57,7 @@ class AuthService {
       print(password);
       AuthResult result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       FirebaseUser user = result.user;
-      await FirestoreService(uid: user.uid).updateSong('歌の名前', '-2');
+      //await FirestoreService(uid: user.uid).updateSong('歌の名前', '-2');
       return _userFromFirebaseUser(user);
     } catch(e) {
       print(e.toString());

@@ -9,17 +9,15 @@ class FirestoreService {
   final CollectionReference songCollection = Firestore.instance.collection('songs');
 
   CollectionReference _getSongCollection(String uid) {
-    print(uid);
-    return Firestore.instance.collection('users').document(uid).collection('songs');
-    //return Firestore.instance.collection('users/$uid/songs');
+    return Firestore.instance.collection('users/$uid/songs');
   }
 
-  Future updateSong(String name, String key) async {
-    return await songCollection.document().setData({
-      'uid': uid,
-      'name': name,
-      'key': key,
-    });
+  Future updateSong(Map<String, dynamic> params) async {
+    return await _getSongCollection(uid).document().setData(params);
+  }
+
+  Future deleteSong(String documentId) async {
+    return await _getSongCollection(uid).document(documentId).delete();
   }
 
   // song list

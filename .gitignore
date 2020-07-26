@@ -1,3 +1,6 @@
+# service_account
+android/app/*
+
 # Miscellaneous
 *.class
 *.log

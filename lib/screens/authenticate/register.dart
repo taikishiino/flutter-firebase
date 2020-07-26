@@ -48,7 +48,7 @@ class _RegisterState extends State<Register> {
             child: Column(
               children: <Widget>[
                 new SizedBox(height: 20.0),
-                new TextFormField(
+                TextFormField(
                     decoration: textInputDecoration.copyWith(hintText: 'Email'),
                     validator: (val) => val.isEmpty ? 'メールアドレスを入力してください' : null,
                     onChanged: (val) {
@@ -57,7 +57,7 @@ class _RegisterState extends State<Register> {
                     }
                 ),
                 new SizedBox(height: 20.0),
-                new TextFormField(
+                TextFormField(
                     obscureText: true,
                     decoration: textInputDecoration.copyWith(hintText: 'Password'),
                     validator: (val) => val.length < 6 ? '6文字以上入力してください' : null,

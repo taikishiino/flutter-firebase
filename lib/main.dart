@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase/services/firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:gradient_app_bar/gradient_app_bar.dart';
+import 'package:flutter_firebase/shared/constants.dart';
 
 void main() {
   // 最初に表示するWidget
@@ -31,10 +34,9 @@ class ChatApp extends StatelessWidget {
         // 右上に表示される"debug"ラベルを消す
         debugShowCheckedModeBanner: false,
         // アプリ名
-        title: 'ChatApp',
+        title: 'うたメモ',
         theme: ThemeData(
           // テーマカラー
-          primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         // ログイン画面を表示
@@ -190,21 +192,49 @@ class ChatPage extends StatelessWidget {
     final FirebaseUser user = userState.user;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('チャット'),
+      appBar: GradientAppBar(
+        backgroundColorStart: const Color(0xffe4a973),
+        backgroundColorEnd: const Color(0xff9941d8),
+        title: Text('うたメモ'),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.close),
-            onPressed: () async {
-              // ログアウト処理
-              // 内部で保持しているセッション情報が初期化される
-              // （現時点ではログアウト時はこの処理を呼び出せばOKと、思うぐらいで大丈夫です）
-              await FirebaseAuth.instance.signOut();
-              // ログイン画面に遷移＋チャット画面を破棄
-              await Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) {
-                  return LoginPage();
-                }),
+          FlatButton.icon(
+            icon: Icon(Icons.person),
+            label: Text('ログアウト'),
+            textColor: Colors.white,
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) {
+                  return AlertDialog(
+                    title: Text("ログアウト"),
+                    content: Text('ログアウトして本当によろしいですか？'),
+                    actions: <Widget>[
+                      FlatButton(
+                        child: Text("Cancel"),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      FlatButton(
+                        child: Text("OK"),
+                        onPressed: () async {
+                          try {
+                            // ログアウト処理
+                            // 内部で保持しているセッション情報が初期化される
+                            await FirebaseAuth.instance.signOut();
+                            // ログイン画面に遷移＋チャット画面を破棄
+                            await Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(builder: (context) {
+                                return LoginPage();
+                              }),
+                            );
+                          } catch(e) {
+                            print(e);
+                          }
+                          Navigator.pop(context);
+                        }
+                      ),
+                    ],
+                  );
+                },
               );
             },
           ),
@@ -217,14 +247,13 @@ class ChatPage extends StatelessWidget {
             child: Text('ログイン情報：${user.email}'),
           ),
           Expanded(
-            // FutureBuilder
             // 非同期処理の結果を元にWidgetを作れる
             child: StreamBuilder<QuerySnapshot>(
               // 投稿メッセージ一覧を取得（非同期処理）
-              // 投稿日時でソート
+              // 更新日時でソート
               stream: Firestore.instance
-                  .collection('posts')
-                  .orderBy('date')
+                  .collection('users/${user.uid}/songs')
+                  .orderBy('updatedAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
                 // データが取得できた場合
@@ -235,24 +264,42 @@ class ChatPage extends StatelessWidget {
                   return ListView(
                     children: documents.map((document) {
                       IconButton deleteIcon;
-                      // 自分の投稿メッセージの場合は削除ボタンを表示
-                      if (document['email'] == user.email) {
-                        deleteIcon = IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () async {
-                            // 投稿メッセージのドキュメントを削除
-                            await Firestore.instance
-                                .collection('posts')
-                                .document(document.documentID)
-                                .delete();
-                          },
-                        );
-                      }
-
+                      deleteIcon = IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) {
+                              return AlertDialog(
+                                title: Text("削除確認"),
+                                content: Text('「${document['name']} / ${document['singer']}」を削除して本当によろしいですか？'),
+                                actions: <Widget>[
+                                  FlatButton(
+                                    child: Text("Cancel"),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                  FlatButton(
+                                    child: Text("OK"),
+                                    onPressed: () async {
+                                      try {
+                                        // 投稿メッセージのドキュメントを削除
+                                        await FirestoreService(uid: user.uid).deleteSong(document.documentID);
+                                      } catch(e) {
+                                        print(e);
+                                      }
+                                      Navigator.pop(context);
+                                    }
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        }
+                      );
                       return Card(
                         child: ListTile(
-                          title: Text(document['text']),
-                          subtitle: Text(document['email']),
+                          title: Text('${document['name']} / ${document['singer']}'),
+                          subtitle: Text('適性キー: ${document['key']}'),
                           trailing: deleteIcon,
                         ),
                       );
@@ -269,7 +316,6 @@ class ChatPage extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
         onPressed: () async {
           // 投稿画面に遷移
           await Navigator.of(context).push(
@@ -279,6 +325,24 @@ class ChatPage extends StatelessWidget {
             }),
           );
         },
+        // グラデーション
+        tooltip: 'Increment',
+        child: Container(
+          height: double.infinity,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: FractionalOffset.topLeft,
+              end: FractionalOffset.bottomRight,
+              colors: const [
+                Color(0xffe4a972),
+                Color(0xff9941d8),
+              ],
+            ),
+          ),
+          child: Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -296,8 +360,14 @@ class AddPostPage extends StatefulWidget {
 }
 
 class _AddPostPageState extends State<AddPostPage> {
-  // 入力した投稿メッセージ
-  String messageText = '';
+
+  final _formKey = GlobalKey<FormState>();
+  final List<String> keys = ['-4', '-3', '-2', '-1', '0', '+1', '+2', '+3', '+4'];
+
+  // State
+  String _currentSongName;  // 曲名
+  String _currentSinger;  // 歌手名
+  String _currentKey; // キー
 
   @override
   Widget build(BuildContext context) {
@@ -307,53 +377,78 @@ class _AddPostPageState extends State<AddPostPage> {
     final FirebaseUser user = userState.user;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('チャット投稿'),
+      appBar: GradientAppBar(
+        backgroundColorStart: const Color(0xffe4a973),
+        backgroundColorEnd: const Color(0xff9941d8),
+        title: Text('うた追加'),
       ),
       body: Center(
         child: Container(
           padding: EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              // 投稿メッセージ入力
-              TextFormField(
-                decoration: InputDecoration(labelText: '投稿メッセージ'),
-                // 複数行のテキスト入力
-                keyboardType: TextInputType.multiline,
-                // 最大3行
-                maxLines: 3,
-                onChanged: (String value) {
-                  setState(() {
-                    messageText = value;
-                  });
-                },
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  // 曲名
+                  TextFormField(
+                    decoration: textInputDecoration.copyWith(hintText: '曲名'),
+                    validator: (val) => val.isEmpty ? '曲名を入力してください' : null,
+                    onChanged: (String value) {
+                      setState(() => _currentSongName = value );
+                    },
+                  ),
+                  SizedBox(height: 20.0),
+                  // 歌手名
+                  TextFormField(
+                    decoration: textInputDecoration.copyWith(hintText: '歌手名'),
+                    onChanged: (String value) {
+                      setState(() => _currentSinger = value );
+                    },
+                  ),
+                  SizedBox(height: 20.0),
+                  DropdownButtonFormField(
+                    value: _currentKey ?? '0',
+                    items: keys.map((key) {
+                      return DropdownMenuItem(
+                        value: key,
+                        child: Text('# $key'),
+                      );
+                    }).toList(),
+                    onChanged: (val) => setState(() => _currentKey = val),
+                  ),
+                  SizedBox(height: 20.0),
+                  Container(
+                    width: double.infinity,
+                    child: RaisedButton(
+                      color: const Color(0xff9941d8),
+                      textColor: Colors.white,
+                      child: Text('追加'),
+                      onPressed: () async {
+                        final currentDate =
+                            DateTime.now().toLocal().toIso8601String(); // 現在の日時
+                        final Map<String, dynamic> postParams = {
+                          'name': _currentSongName,
+                          'singer': _currentSinger,
+                          'key': _currentKey,
+                          'createdAt': currentDate,
+                          'updatedAt': currentDate,
+                          'deletedAt': null
+                        };
+                        try {
+                          await FirestoreService(uid: user.uid).updateSong(postParams);
+                        } catch(e) {
+                          print(e);
+                        }
+                        // 1つ前の画面に戻る
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  )
+                ],
               ),
-              Container(
-                width: double.infinity,
-                child: RaisedButton(
-                  color: Colors.blue,
-                  textColor: Colors.white,
-                  child: Text('投稿'),
-                  onPressed: () async {
-                    final date =
-                        DateTime.now().toLocal().toIso8601String(); // 現在の日時
-                    final email = user.email; // AddPostPage のデータを参照
-                    // 投稿データ用ドキュメント作成
-                    await Firestore.instance
-                        .collection('posts') // コレクションID指定
-                        .document() // ドキュメントID自動生成
-                        .setData({
-                      'text': messageText,
-                      'email': email,
-                      'date': date
-                    });
-                    // 1つ前の画面に戻る
-                    Navigator.of(context).pop();
-                  },
-                ),
-              )
-            ],
+            ),
           ),
         ),
       ),
