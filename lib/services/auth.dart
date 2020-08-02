@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_firebase/models/users.dart';
-import 'package:flutter_firebase/services/firestore.dart';
+//import 'package:flutter_firebase/services/firestore.dart';
 
 class AuthService {
 
@@ -8,7 +8,7 @@ class AuthService {
 
   // create obj on Firebase User
   User _userFromFirebaseUser(FirebaseUser user) {
-    return user != null ? User(uid: user.uid) : null;
+    return user != null ? User(uid: user.uid, email: user.email) : null;
   }
 
   // auth change user stream
