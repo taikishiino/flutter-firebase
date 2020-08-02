@@ -34,7 +34,7 @@ class ChatApp extends StatelessWidget {
         // 右上に表示される"debug"ラベルを消す
         debugShowCheckedModeBanner: false,
         // アプリ名
-        title: 'うたメモ',
+        title: 'うたメモβ',
         theme: ThemeData(
           // テーマカラー
           visualDensity: VisualDensity.adaptivePlatformDensity,

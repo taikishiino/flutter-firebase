@@ -1,0 +1,49 @@
+name: Flutter web deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Build
+        uses: subosito/flutter-action@v1
+        with:
+          channel: 'beta'
+      - run: |
+          flutter config --enable-web
+          flutter pub get
+          cat <<EOF > assets/secret.json
+          ${{ secrets.CREDENTIAL_JSON }}
+          EOF
+          flutter build web
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: web
+          path: build/web
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Download Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: web
+          path: build/web
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only hosting
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

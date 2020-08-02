@@ -1,5 +1,6 @@
 # service_account
-android/app/*
+/android/app/
+.firebase
 
 # Miscellaneous
 *.class

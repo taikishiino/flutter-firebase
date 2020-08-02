@@ -8,3 +8,5 @@ force-upgrade:
 	flutter update-packages --force-upgrade
 	flutter clean
 	flutter upgrade
+deploy-web:
+	firebase deploy --only hosting:flutter-firebase-f165b
