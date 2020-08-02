@@ -191,9 +191,9 @@ class _AddPostPageState extends State<AddPostPage> {
                       activeTickMarkColor: Colors.purple[300],
                     ),
                     child: Slider(
-                      min: -4,
-                      max: 4,
-                      divisions: 8,
+                      min: -5,
+                      max: 5,
+                      divisions: 10,
                       value: (_currentKey ?? 0),
                       label: '${(_currentKey ?? 0).toString()}',
                       onChanged: (val) => setState(() => _currentKey = val),
