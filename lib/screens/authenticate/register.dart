@@ -1,5 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter_firebase/models/users.dart';
 import 'package:flutter_firebase/services/auth.dart';
 import 'package:flutter_firebase/services/firestore.dart';
@@ -103,8 +104,8 @@ class _RegisterState extends State<Register> {
                             try {
                               final User user = await _auth.registerWithEmailAndPassword(email, password);
                               if (user != null) {
-                                final currentDate =
-                                DateTime.now().toLocal().toIso8601String(); // 現在の日時
+                                final currentDate = DateTime.now().toLocal();
+                                Timestamp createdAtTimestamp = Timestamp.fromDate(currentDate);
                                 await FirestoreService(uid: user.uid).updateSong({
                                   'name': '例）欲望に満ちた青年団',
                                   'singer': 'ONE OK ROCK',
